@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3D Happy Birthday Cake</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: transparent;
+      }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  </head>
+  <body>
+    <script>
+      // 1. SETUP SCENE, CAMERA, AND RENDERER
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(
+        45,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        100,
+      );
+      camera.position.set(0, 8, 22);
+      camera.lookAt(0, 5, 0);
+
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      // Soft shadows
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      document.body.appendChild(renderer.domElement);
+
+      // 2. LIGHTING - light from near camera (slightly offset)
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+      scene.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+      dirLight.position.set(2, 9, 20); // Slightly offset from camera (0, 8, 22)
+      dirLight.castShadow = true;
+      scene.add(dirLight);
+
+      // 3. CREATE THE CAKE (Group)
+      const cakeGroup = new THREE.Group();
+      cakeGroup.position.y = 4; // Move up so full cake fits in view
+      scene.add(cakeGroup);
+
+      // Materials
+      const creamFrosting = new THREE.MeshStandardMaterial({
+        color: 0xfff5e6,
+        roughness: 0.8,
+      });
+
+      // Bottom Tier
+      const baseGeo = new THREE.CylinderGeometry(5, 5, 3, 64);
+      const baseMesh = new THREE.Mesh(baseGeo, creamFrosting);
+      baseMesh.position.y = 1.5;
+      baseMesh.castShadow = true;
+      baseMesh.receiveShadow = true;
+      cakeGroup.add(baseMesh);
+
+      // Top Tier
+      const topGeo = new THREE.CylinderGeometry(3.5, 3.5, 2.5, 64);
+      const topMesh = new THREE.Mesh(topGeo, creamFrosting);
+      topMesh.position.y = 4.25; // 3 (base) + 1.25 (half of top)
+      topMesh.castShadow = true;
+      topMesh.receiveShadow = true;
+      cakeGroup.add(topMesh);
+
+      // 4. ADD "HAPPY BIRTHDAY" TEXT ON OPPOSITE SIDES
+      const canvas = document.createElement("canvas");
+      canvas.width = 512;
+      canvas.height = 128;
+      const ctx = canvas.getContext("2d");
+      ctx.font = "Bold 36px Arial";
+      ctx.fillStyle = "#ff1493";
+      ctx.textAlign = "center";
+      ctx.fillText("Happy Birthday!", 256, 70);
+
+      const textTexture = new THREE.CanvasTexture(canvas);
+      const textMaterial = new THREE.MeshBasicMaterial({
+        map: textTexture,
+        transparent: true,
+        side: THREE.DoubleSide,
+      });
+
+      const textMaterialBack = new THREE.MeshBasicMaterial({
+        map: textTexture,
+        transparent: true,
+        side: THREE.DoubleSide,
+      });
+
+      // Front text (facing camera) - arc from -60° to 60°
+      const textGeoFront = new THREE.CylinderGeometry(
+        5.05, 5.05, 1.5, 32, 1, true,
+        -Math.PI / 3, Math.PI / 1.5
+      );
+      const textMeshFront = new THREE.Mesh(textGeoFront, textMaterial);
+      textMeshFront.position.y = 1.5;
+      cakeGroup.add(textMeshFront);
+
+      // Back text (opposite side) - arc from 120° to 240°
+      const textGeoBack = new THREE.CylinderGeometry(
+        5.05, 5.05, 1.5, 32, 1, true,
+        (2 * Math.PI) / 3, (4 * Math.PI) / 3
+      );
+      const textMeshBack = new THREE.Mesh(textGeoBack, textMaterialBack);
+      textMeshBack.position.y = 1.5;
+      cakeGroup.add(textMeshBack);
+
+      // 6. ADD CANDLES
+      function createCandle(x, z) {
+        const candleGroup = new THREE.Group();
+
+        // Candle Body
+        const candleGeo = new THREE.CylinderGeometry(0.15, 0.15, 1.5, 16);
+        const candleMat = new THREE.MeshStandardMaterial({ color: 0x87ceeb }); // Light blue
+        const candle = new THREE.Mesh(candleGeo, candleMat);
+        candle.position.y = 0.75;
+        candle.castShadow = true;
+        candleGroup.add(candle);
+
+        // Flame
+        const flameGeo = new THREE.ConeGeometry(0.12, 0.4, 16);
+        const flameMat = new THREE.MeshBasicMaterial({ color: 0xffa500 }); // Orange
+        const flame = new THREE.Mesh(flameGeo, flameMat);
+        flame.position.y = 1.6;
+        candleGroup.add(flame);
+
+        // Position the whole candle
+        candleGroup.position.set(x, 5.5, z); // On top of the second tier
+        cakeGroup.add(candleGroup);
+      }
+
+      // Place three candles
+      createCandle(0, 2);
+      createCandle(-1.7, -1);
+      createCandle(1.7, -1);
+
+      // 7. ANIMATION LOOP
+      function animate() {
+        requestAnimationFrame(animate);
+
+        // Slowly rotate the whole cake
+        cakeGroup.rotation.y += 0.001;
+
+        renderer.render(scene, camera);
+      }
+
+      // Handle window resizing
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // Start animation
+      animate();
+    </script>
+  </body>
+</html>

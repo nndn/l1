@@ -119,6 +119,129 @@
         padding-bottom: 0.5rem;
       }
 
+      /* Group chat style */
+      .chat-wrap {
+        margin-top: 1rem;
+        background: #e5ddd5;
+        background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h100v100H0z' fill='%23e5ddd5'/%3E%3Cpath d='M50 50c0-8 4-15 10-20-2 5-3 10-3 15 0 5 1 10 3 15-6-5-10-12-10-20z' fill='%23d1c9c0' fill-opacity='0.4'/%3E%3C/svg%3E");
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15), inset 0 0 0 1px rgba(0,0,0,0.05);
+      }
+
+      .chat-header {
+        background: #075e54;
+        color: #fff;
+        padding: 0.875rem 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .chat-header-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ff69b4, #ff1493);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+      }
+
+      .chat-header-info {
+        flex: 1;
+      }
+
+      .chat-header-title {
+        font-weight: 600;
+        font-size: 1rem;
+      }
+
+      .chat-header-sub {
+        font-size: 0.75rem;
+        opacity: 0.85;
+      }
+
+      .chat-messages {
+        padding: 1rem;
+        min-height: 320px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+
+      .chat-msg {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.25rem;
+        max-width: 85%;
+      }
+
+      .chat-msg-avatar {
+        flex-shrink: 0;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        overflow: hidden;
+        object-fit: cover;
+        align-self: flex-start;
+      }
+
+      .chat-msg-avatar.initials {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+        font-weight: 600;
+        color: #fff;
+        background: #ff69b4;
+      }
+
+      .chat-msg-bubble {
+        background: #fff;
+        padding: 0.5rem 0.75rem;
+        border-radius: 8px;
+        border-top-left-radius: 2px;
+        box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+      }
+
+      .chat-msg-name {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #128c7e;
+        margin-bottom: 0.15rem;
+      }
+
+      .chat-msg-text {
+        font-size: 0.9rem;
+        color: #111;
+        line-height: 1.4;
+      }
+
+      .chat-msg-time {
+        font-size: 0.65rem;
+        color: #8696a0;
+        text-align: right;
+        margin-top: 0.2rem;
+      }
+
+      .chat-msg-video {
+        max-width: 100%;
+        width: 240px;
+        border-radius: 8px;
+        margin-top: 0.5rem;
+        display: block;
+      }
+
+      .chat-msg-audio {
+        margin-top: 0.5rem;
+        max-width: 100%;
+      }
+
+      .chat-msg-audio audio {
+        height: 36px;
+        max-width: 100%;
+      }
+
       hr {
         border: none;
         border-top: 2px dashed #ff69b4;
@@ -138,40 +261,6 @@
       footer p { margin: 0.25rem 0; }
       .construction { font-size: 0.8rem; opacity: 0.9; }
 
-      .scatter-wrap {
-        position: relative;
-        min-height: 100vh;
-        min-height: 100dvh;
-        overflow: visible;
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-      }
-
-      .scatter-img {
-        position: absolute;
-        object-fit: contain;
-        z-index: 999;
-      }
-
-      .scatter-img.img-1 { width: 220px; height: 220px; top: 8%; right: 6%; transform: rotate(5deg); }
-      .scatter-img.img-2 { width: 180px; height: 180px; bottom: 20%; left: 5%; transform: rotate(-7deg); }
-      .scatter-img.img-3 { width: 260px; height: 260px; top: 15%; left: 3%; transform: rotate(-4deg); }
-      .scatter-img.img-4 { width: 200px; height: 200px; top: 45%; left: 10%; transform: rotate(8deg); }
-      .scatter-img.img-5 { width: 160px; height: 160px; top: 5%; left: 15%; transform: rotate(-6deg); }
-      .scatter-img.img-6 { width: 240px; height: 240px; bottom: 15%; right: 5%; transform: rotate(3deg); }
-      .scatter-img.img-7 { width: 190px; height: 190px; top: 42%; right: 12%; transform: rotate(-5deg); }
-
-      @media (max-width: 768px) {
-        .scatter-img.img-1 { width: 140px; height: 140px; top: 6%; right: 2%; }
-        .scatter-img.img-2 { width: 110px; height: 110px; bottom: 18%; left: 2%; }
-        .scatter-img.img-3 { width: 160px; height: 160px; top: 12%; left: 0; }
-        .scatter-img.img-4 { width: 130px; height: 130px; top: 42%; left: 2%; }
-        .scatter-img.img-5 { width: 100px; height: 100px; top: 2%; left: 5%; }
-        .scatter-img.img-6 { width: 150px; height: 150px; bottom: 12%; right: 0; }
-        .scatter-img.img-7 { width: 120px; height: 120px; top: 40%; right: 2%; }
-      }
-
       @media (max-width: 480px) {
         header { padding: 0.75rem; }
         nav { gap: 1rem; }
@@ -180,28 +269,22 @@
         .banner h1 { letter-spacing: 0.05em; }
         main { padding: 1rem 0.75rem; }
         section { padding: 1rem; margin-bottom: 1rem; box-shadow: 3px 3px 0 #ffb6c1; }
+        .chat-wrap { border-radius: 8px; }
+        .chat-messages { padding: 0.75rem; }
+        .chat-msg { max-width: 95%; }
         footer { padding: 1rem 0.75rem; font-size: 0.85rem; }
       }
     </style>
   </head>
   <body>
-    <div class="scatter-wrap">
-      <img class="scatter-img img-1" src="assets/image.png" alt="" />
-      <img class="scatter-img img-2" src="assets/image copy.png" alt="" />
-      <img class="scatter-img img-3" src="assets/image copy 2.png" alt="" />
-      <img class="scatter-img img-4" src="assets/image copy 3.png" alt="" />
-      <img class="scatter-img img-5" src="assets/flower.png" alt="" />
-      <img class="scatter-img img-6" src="assets/unicorn.png" alt="" />
-      <img class="scatter-img img-7" src="assets/image copy 4.png" alt="" />
-
-      <header>
+    <header>
         <nav>
           <a href="index.html">★ Home</a>
-          <a href="release.html">★ Release</a>
           <a href="message.html">★ Message</a>
           <a href="wishes.html">★ Wishes</a>
+          <a href="collage.html">★ Collage</a>
           <a href="timepass.html">★ Timepass</a>
-          <a href="about.html">★ About</a>
+          <a href="release.html">★ Release</a>
         </nav>
       </header>
 
@@ -219,6 +302,123 @@
             make you smile. You deserve the world and so much more. Here's to
             another amazing year! ✿
           </p>
+          <div class="chat-wrap">
+            <div class="chat-header">
+              <div class="chat-header-avatar">🎂</div>
+              <div class="chat-header-info">
+                <div class="chat-header-title">Birthday Wishes</div>
+                <div class="chat-header-sub">13 participants</div>
+              </div>
+            </div>
+            <div class="chat-messages">
+              <div class="chat-msg">
+                <img class="chat-msg-avatar" src="assets/peopls/vishruth.jpg" alt="Vishruth" />
+                <div class="chat-msg-bubble">
+                  <div class="chat-msg-name">Vishruth</div>
+                  <video class="chat-msg-video" src="assets/collage/vishruth.mp4" controls playsinline></video>
+                  <div class="chat-msg-time">10:32 AM</div>
+                </div>
+              </div>
+              <div class="chat-msg">
+                <img class="chat-msg-avatar" src="assets/peopls/rohith.jpeg" alt="Rohith" />
+                <div class="chat-msg-bubble">
+                  <div class="chat-msg-name">Rohith</div>
+                  <div class="chat-msg-text">Have the best birthday ever! May all your wishes come true. Cheers to you! 🥳</div>
+                  <div class="chat-msg-time">10:35 AM</div>
+                </div>
+              </div>
+              <div class="chat-msg">
+                <img class="chat-msg-avatar" src="assets/peopls/sandeep.jpg" alt="Sandeep" />
+                <div class="chat-msg-bubble">
+                  <div class="chat-msg-name">Sandeep</div>
+                  <div class="chat-msg-text">HBD(1)</div>
+                  <div class="chat-msg-time">10:41 AM</div>
+                </div>
+              </div>
+              <div class="chat-msg">
+                <img class="chat-msg-avatar" src="assets/peopls/akash.jpeg" alt="Akash" />
+                <div class="chat-msg-bubble">
+                  <div class="chat-msg-name">Akash</div>
+                  <video class="chat-msg-video" src="assets/collage/akash.mp4" controls playsinline></video>
+                  <div class="chat-msg-time">10:48 AM</div>
+                </div>
+              </div>
+              <div class="chat-msg">
+                <img class="chat-msg-avatar" src="assets/peopls/Rahul.jpg" alt="Rahul" />
+                <div class="chat-msg-bubble">
+                  <div class="chat-msg-name">Rahul</div>
+                  <div class="chat-msg-text">HBD</div>
+                  <div class="chat-msg-time">10:52 AM</div>
+                </div>
+              </div>
+              <div class="chat-msg">
+                <img class="chat-msg-avatar" src="assets/peopls/palak.jpeg" alt="Palak" />
+                <div class="chat-msg-bubble">
+                  <div class="chat-msg-name">Palak</div>
+                  <video class="chat-msg-video" src="assets/collage/palaks.mp4" controls playsinline></video>
+                  <div class="chat-msg-time">11:02 AM</div>
+                </div>
+              </div>
+              <div class="chat-msg">
+                <div class="chat-msg-avatar initials" style="background: #128c7e;">J</div>
+                <div class="chat-msg-bubble">
+                  <div class="chat-msg-name">Jalaks</div>
+                  <video class="chat-msg-video" src="assets/collage/jalaks.mp4" controls playsinline></video>
+                  <div class="chat-msg-time">11:07 AM</div>
+                </div>
+              </div>
+              <div class="chat-msg">
+                <img class="chat-msg-avatar" src="assets/peopls/tanmay.jpg" alt="Tanmay" />
+                <div class="chat-msg-bubble">
+                  <div class="chat-msg-name">Tanmay</div>
+                  <div class="chat-msg-text">Happy birthday! Cheers to another year of awesome adventures. Enjoy! 🎊</div>
+                  <div class="chat-msg-time">11:12 AM</div>
+                </div>
+              </div>
+              <div class="chat-msg">
+                <img class="chat-msg-avatar" src="assets/peopls/Gautham.jpg" alt="Gautham" />
+                <div class="chat-msg-bubble">
+                  <div class="chat-msg-name">Gautham</div>
+                  <div class="chat-msg-text">Have a fantastic birthday! Wishing you all the best for the year ahead! 🎁</div>
+                  <div class="chat-msg-time">11:20 AM</div>
+                </div>
+              </div>
+              <div class="chat-msg">
+                <img class="chat-msg-avatar" src="assets/peopls/lavanya.jpg" alt="Lavanya" />
+                <div class="chat-msg-bubble">
+                  <div class="chat-msg-name">Lavanya</div>
+                  <div class="chat-msg-text">Happy birthday! May your special day be filled with love, laughter, and cake! 🎂</div>
+                  <div class="chat-msg-time">11:28 AM</div>
+                </div>
+              </div>
+              <div class="chat-msg">
+                <img class="chat-msg-avatar" src="assets/peopls/shefali.jpeg" alt="Shefali" />
+                <div class="chat-msg-bubble">
+                  <div class="chat-msg-name">Shefali</div>
+                  <div class="chat-msg-text">Happy 25th Birthday, Pali 💫 the age where your midlife crisis unofficially begins. The age where everything starts going upward, but somehow it still feels like it's falling apart. It's confusing, overwhelming all at once. And in all of that I'll be there. For the spirals. For the glow-ups. For the breakdowns that turn into breakthroughs. For every dramatic voice note and every "I don't know what I'm doing with my life" moment.<br><br>Yes, you are a snitch. Unfortunately for you, you are my snitch. And I'll probably forgive you in 10+ years… maybe. Otherwise I am so proud of the woman you're becoming. I've seen you grow, I've seen you stumble, I've seen you choose strength and I genuinely learn from you every single day. You've grown in ways you probably don't even realise yet. You're braver, softer, wiser, and stronger than you give yourself credit for.<br><br>I hope this year gives you clarity when you're confused, courage when you're scared, and calm when everything feels too loud. I hope you chase the life you deserve the big one.<br><br>Wishing you the best birthday ever. (Of course it will be you're away from home, lol. But don't get too comfortable.)<br><br>I love you more than I'll ever admit out loud. Always have. Always will. 🤍</div>
+                  <div class="chat-msg-time">11:35 AM</div>
+                </div>
+              </div>
+              <div class="chat-msg">
+                <div class="chat-msg-avatar initials" style="background: #ff1493;">M</div>
+                <div class="chat-msg-bubble">
+                  <div class="chat-msg-name">Mumma</div>
+                  <div class="chat-msg-text">To my little princess 🤍<br><br>I still remember the little girl who looked up at me like I was her whole world. Now I look at you and feel proud because you have become strong, kind, caring and beautiful.<br><br>Time will pass but you will always be my daughter's joy and strength and my baby. Happy memorable 25th birthday ♥</div>
+                  <div class="chat-msg-time">11:42 AM</div>
+                </div>
+              </div>
+              <div class="chat-msg">
+                <div class="chat-msg-avatar initials" style="background: #ff1493;">M</div>
+                <div class="chat-msg-bubble">
+                  <div class="chat-msg-name">Mumma</div>
+                  <div class="chat-msg-audio">
+                    <audio src="assets/collage/mumma2.ogg" controls></audio>
+                  </div>
+                  <div class="chat-msg-time">11:48 AM</div>
+                </div>
+              </div>
+            </div>
+          </div>
           <hr />
           <p><em>Made with ♥ on the information superhighway</em></p>
         </section>
@@ -229,6 +429,5 @@
         <p class="construction">Best viewed with nostalgia • Last updated: February 2025</p>
         <p>★ Thank you for visiting! ★</p>
       </footer>
-    </div>
   </body>
 </html>

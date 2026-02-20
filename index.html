@@ -33,7 +33,10 @@
       }
 
       /* Keep content above scattered images */
-      header, .banner, main, footer {
+      header,
+      .banner,
+      main,
+      footer {
         position: relative;
         z-index: 10;
       }
@@ -100,6 +103,10 @@
         }
       }
 
+      .banner h1 .name {
+        font-size: 0.6em;
+      }
+
       .banner h1 {
         font-family: "Comic Sans MS", "Marker Felt", cursive;
         font-size: clamp(2rem, 8vw, 4rem);
@@ -144,6 +151,19 @@
         margin-bottom: 1rem;
         border-bottom: 2px dotted #ff69b4;
         padding-bottom: 0.5rem;
+      }
+
+      .cake-float {
+        width: 100%;
+        height: 380px;
+        margin: 1.5rem 0;
+      }
+
+      .cake-float iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+        background: transparent;
       }
 
       .visitor-counter {
@@ -207,22 +227,99 @@
         z-index: 999;
       }
 
-      .scatter-img.img-1 { width: 220px; height: 220px; top: 8%; right: 6%; transform: rotate(5deg); }
-      .scatter-img.img-2 { width: 180px; height: 180px; bottom: 20%; left: 5%; transform: rotate(-7deg); }
-      .scatter-img.img-3 { width: 260px; height: 260px; top: 15%; left: 3%; transform: rotate(-4deg); }
-      .scatter-img.img-4 { width: 200px; height: 200px; top: 45%; left: 10%; transform: rotate(8deg); }
-      .scatter-img.img-5 { width: 160px; height: 160px; top: 5%; left: 15%; transform: rotate(-6deg); }
-      .scatter-img.img-6 { width: 240px; height: 240px; bottom: 15%; right: 5%; transform: rotate(3deg); }
-      .scatter-img.img-7 { width: 190px; height: 190px; top: 42%; right: 12%; transform: rotate(-5deg); }
+      .scatter-img.img-1 {
+        width: 220px;
+        height: 220px;
+        top: 8%;
+        right: 6%;
+        transform: rotate(5deg);
+      }
+      .scatter-img.img-2 {
+        width: 180px;
+        height: 180px;
+        bottom: 20%;
+        left: 5%;
+        transform: rotate(-7deg);
+      }
+      .scatter-img.img-3 {
+        width: 260px;
+        height: 260px;
+        top: 15%;
+        left: 3%;
+        transform: rotate(-4deg);
+      }
+      .scatter-img.img-4 {
+        width: 200px;
+        height: 200px;
+        top: 45%;
+        left: 10%;
+        transform: rotate(8deg);
+      }
+      .scatter-img.img-5 {
+        width: 160px;
+        height: 160px;
+        top: 5%;
+        left: 15%;
+        transform: rotate(-6deg);
+      }
+      .scatter-img.img-6 {
+        width: 240px;
+        height: 240px;
+        bottom: 15%;
+        right: 5%;
+        transform: rotate(3deg);
+      }
+      .scatter-img.img-7 {
+        width: 190px;
+        height: 190px;
+        top: 42%;
+        right: 12%;
+        transform: rotate(-5deg);
+      }
 
       @media (max-width: 768px) {
-        .scatter-img.img-1 { width: 140px; height: 140px; top: 6%; right: 2%; }
-        .scatter-img.img-2 { width: 110px; height: 110px; bottom: 18%; left: 2%; }
-        .scatter-img.img-3 { width: 160px; height: 160px; top: 12%; left: 0; }
-        .scatter-img.img-4 { width: 130px; height: 130px; top: 42%; left: 2%; }
-        .scatter-img.img-5 { width: 100px; height: 100px; top: 2%; left: 5%; }
-        .scatter-img.img-6 { width: 150px; height: 150px; bottom: 12%; right: 0; }
-        .scatter-img.img-7 { width: 120px; height: 120px; top: 40%; right: 2%; }
+        .scatter-img.img-1 {
+          width: 140px;
+          height: 140px;
+          top: 6%;
+          right: 2%;
+        }
+        .scatter-img.img-2 {
+          width: 110px;
+          height: 110px;
+          bottom: 18%;
+          left: 2%;
+        }
+        .scatter-img.img-3 {
+          width: 160px;
+          height: 160px;
+          top: 12%;
+          left: 0;
+        }
+        .scatter-img.img-4 {
+          width: 130px;
+          height: 130px;
+          top: 42%;
+          left: 2%;
+        }
+        .scatter-img.img-5 {
+          width: 100px;
+          height: 100px;
+          top: 2%;
+          left: 5%;
+        }
+        .scatter-img.img-6 {
+          width: 150px;
+          height: 150px;
+          bottom: 12%;
+          right: 0;
+        }
+        .scatter-img.img-7 {
+          width: 120px;
+          height: 120px;
+          top: 40%;
+          right: 2%;
+        }
       }
 
       /* Mobile friendly */
@@ -282,36 +379,47 @@
       <header>
         <nav>
           <a href="index.html">★ Home</a>
-          <a href="release.html">★ Release</a>
           <a href="message.html">★ Message</a>
           <a href="wishes.html">★ Wishes</a>
+          <a href="collage.html">★ Collage</a>
           <a href="timepass.html">★ Timepass</a>
-          <a href="about.html">★ About</a>
+          <a href="release.html">★ Release</a>
         </nav>
       </header>
 
       <div class="banner" id="home">
         <span class="stars">★ ✧ ★ ✧ ★</span>
-        <h1>🎂 HAPPY BIRTHDAY! 🎂</h1>
+        <h1>
+          🎂 HAPPY BIRTHDAY !!! 🎂 <br />
+          🎂 <span class="name">*insert girl's name here*</span> 🎂
+        </h1>
         <span class="stars">★ ✧ ★ ✧ ★</span>
       </div>
 
       <main>
         <section class="release-teaser">
-          <h2>🎵 New Mixtape Out Now</h2>
+          <h2>🎵 (Early access)</h2>
           <p>Listen to the new release — album art, track list & player.</p>
-          <p><a href="release.html" style="color:#ff1493;font-weight:bold;">★ Go to Release page →</a></p>
+          <p>
+            <a href="release.html" style="color: #ff1493; font-weight: bold"
+              >★ Go to Release page →</a
+            >
+          </p>
         </section>
         <section id="message">
           <span class="visitor-counter">visitors: 000042 ✿</span>
           <h2>Welcome to your special day!</h2>
           <p>
-            You've arrived at the most important website on the entire world wide
-            web today. Grab your dial-up modem, put on your favorite track from
-            1999, and enjoy!
+            You've arrived at the most important website on the entire world
+            wide web today. Grab your dial-up modem, put on your favorite track
+            from 1999, and enjoy!
           </p>
           <div class="divider">~ * ~ * ~</div>
         </section>
+
+        <div class="cake-float">
+          <iframe src="cake.html" title="3D Birthday Cake"></iframe>
+        </div>
 
         <section id="wishes">
           <h2>Birthday Wishes</h2>
@@ -323,15 +431,6 @@
           <hr />
           <p><em>Made with ♥ on the information superhighway</em></p>
         </section>
-
-        <section id="about">
-          <h2>About This Site</h2>
-          <p>
-            This website was crafted in the spirit of the early internet—simple,
-            heartfelt, and a little bit quirky. Because the best gifts sometimes
-            come in vintage packaging.
-          </p>
-        </section>
       </main>
 
       <footer>
@@ -342,6 +441,5 @@
         <p>★ Thank you for visiting! ★</p>
       </footer>
     </div>
-
   </body>
 </html>
