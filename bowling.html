@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>★ Bowling • Happy Birthday! ★</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      html, body {
+        overflow: hidden;
+        width: 100%;
+        height: 100%;
+        height: 100dvh;
+        touch-action: none;
+      }
+
+      body {
+        font-family: Georgia, "Times New Roman", serif;
+        background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      }
+
+      .game-wrap {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh;
+      }
+
+      #gameCanvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        cursor: crosshair;
+      }
+
+      .back-link {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        z-index: 10;
+        color: #fff;
+        background: rgba(0,0,0,0.5);
+        padding: 8px 14px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 0.95rem;
+      }
+
+      .back-link:hover {
+        background: rgba(0,0,0,0.7);
+      }
+
+      .hud {
+        position: fixed;
+        top: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        color: #fff;
+        background: rgba(0,0,0,0.5);
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 1rem;
+        pointer-events: none;
+      }
+
+      .hud strong { color: #ffd700; }
+    </style>
+  </head>
+  <body>
+    <a class="back-link" href="timepass.html">← Back</a>
+    <div class="hud">
+      Round <strong id="roundNum">1</strong> / 3 &nbsp;|&nbsp;
+      Score: <strong id="totalScore">0</strong> &nbsp;|&nbsp;
+      This round: <strong id="roundScore">0</strong>
+    </div>
+    <div class="game-wrap">
+      <canvas id="gameCanvas" width="400" height="600" tabindex="0"></canvas>
+    </div>
+
+    <script>
+      (function () {
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gameWrap = document.querySelector('.game-wrap');
+        const roundEl = document.getElementById('roundNum');
+        const totalScoreEl = document.getElementById('totalScore');
+        const roundScoreEl = document.getElementById('roundScore');
+
+        // Internal lane coordinates (fixed aspect ratio)
+        const LANE_W = 200;
+        const LANE_L = 600;
+        const GUTTER_W = 24;
+        const FOUL_LINE = 520;
+        const BALL_R = 12;
+        const BALL_START_X = 100;
+        const BALL_START_Y = 560;
+        const PIN_HIT_R = 18;
+        const PIN_H = 32;
+        const PIN_HEAD_R = 5;
+        const PIN_BASE_W = 14;
+        const ROUNDS = 3;
+        // Physics: real bowling ball ~6–7 kg, pin ~1.5 kg (ratio ~5:1)
+        const BALL_MASS = 5;
+        const PIN_MASS = 1;
+        const RESTITUTION = 0.35;
+        const FRICTION = 0.982;
+        const PIN_FRICTION = 0.94;
+        const MIN_SPEED = 0.25;
+        const THROW_MULTIPLIER = 0.2;
+        const MAX_THROW_SPEED = 24;
+
+        let cw, ch;
+        let scale, offsetX, offsetY;
+        let ball = { x: BALL_START_X, y: BALL_START_Y, vx: 0, vy: 0, active: false };
+        let pins = [];
+        let currentRound = 1;
+        let totalScore = 0;
+        let roundEndTimer = null;
+        let gameOver = false;
+        let dragStart = null;
+        let dragHistory = [];
+        const DRAG_HISTORY_MAX = 16;
+        const THROW_VELOCITY_SCALE = 0.65;
+        const RELEASE_SPAN_POINTS = 4;
+        const BALL_DRAG_Y_MIN = FOUL_LINE;
+        const BALL_DRAG_Y_MAX = BALL_START_Y + 40;
+        const BALL_DRAG_X_MIN = GUTTER_W + BALL_R;
+        const BALL_DRAG_X_MAX = LANE_W - GUTTER_W - BALL_R;
+
+        function screenToLane(sx, sy) {
+          return {
+            x: (sx - offsetX) / scale,
+            y: (sy - offsetY) / scale
+          };
+        }
+
+        function laneToScreen(lx, ly) {
+          return {
+            x: lx * scale + offsetX,
+            y: ly * scale + offsetY
+          };
+        }
+
+        function resizeCanvas() {
+          const w = gameWrap.clientWidth;
+          const h = gameWrap.clientHeight;
+          if (canvas.width !== w || canvas.height !== h) {
+            canvas.width = w;
+            canvas.height = h;
+          }
+          cw = canvas.width;
+          ch = canvas.height;
+          scale = Math.min(cw / LANE_W, ch / LANE_L);
+          offsetX = (cw - LANE_W * scale) / 2;
+          offsetY = (ch - LANE_L * scale) / 2;
+          reposition();
+        }
+
+        function reposition() {
+          ball.x = BALL_START_X;
+          ball.y = BALL_START_Y;
+          ball.vx = 0;
+          ball.vy = 0;
+          ball.active = false;
+          const positions = getPinPositions();
+          pins = positions.map((p, i) => ({
+            x: p.x, y: p.y, vx: 0, vy: 0, fallen: false, inMotion: false, id: i
+          }));
+        }
+
+        function getPinPositions() {
+          const cx = LANE_W / 2;
+          const topY = 50;
+          const rowGap = 22;
+          const colGap = 18;
+          const positions = [];
+          const rows = [[0], [-1, 1], [-2, 0, 2], [-3, -1, 1, 3]];
+          for (let r = 0; r < rows.length; r++) {
+            const rowY = topY + (rows.length - 1 - r) * rowGap;
+            for (const col of rows[r]) {
+              positions.push({
+                x: cx + col * colGap,
+                y: rowY
+              });
+            }
+          }
+          return positions;
+        }
+
+        function isOffLane(pin) {
+          return pin.y > LANE_L + 50 || pin.y < -40 || pin.x < -40 || pin.x > LANE_W + 40;
+        }
+
+        function isPinDown(pin) {
+          return pin.fallen || isOffLane(pin);
+        }
+
+        function countFallenPins() {
+          return pins.filter(isPinDown).length;
+        }
+
+        function startRound() {
+          reposition();
+          roundEl.textContent = currentRound;
+          totalScoreEl.textContent = totalScore;
+          roundScoreEl.textContent = '0';
+        }
+
+        function endRound() {
+          const knocked = countFallenPins();
+          totalScore += knocked;
+          totalScoreEl.textContent = totalScore;
+          roundScoreEl.textContent = knocked;
+          currentRound++;
+          if (currentRound > ROUNDS) {
+            gameOver = true;
+            return;
+          }
+          if (roundEndTimer) clearTimeout(roundEndTimer);
+          roundEndTimer = setTimeout(startRound, 1800);
+        }
+
+        function checkRoundEnd() {
+          if (!ball.active) return;
+          const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+          if (speed > MIN_SPEED) return;
+          const pastFoul = ball.y < 0 || ball.y > LANE_L + 30;
+          if (pastFoul || speed <= MIN_SPEED) {
+            ball.active = false;
+            ball.vx = ball.vy = 0;
+            if (roundEndTimer) clearTimeout(roundEndTimer);
+            roundEndTimer = setTimeout(endRound, 500);
+          }
+        }
+
+        function collideCircleCircle(ax, ay, ar, bx, by, br) {
+          const dx = bx - ax;
+          const dy = by - ay;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const overlap = ar + br - dist;
+          if (overlap <= 0) return null;
+          const nx = dx / dist;
+          const ny = dy / dist;
+          return { nx, ny, overlap };
+        }
+
+        function updateBall(dt) {
+          if (dragStart) return;
+          if (!ball.active) return;
+          ball.x += ball.vx * dt;
+          ball.y += ball.vy * dt;
+          ball.vx *= FRICTION;
+          ball.vy *= FRICTION;
+          ball.x = Math.max(BALL_R, Math.min(LANE_W - BALL_R, ball.x));
+          if (ball.x <= BALL_R) ball.vx *= -0.4;
+          if (ball.x >= LANE_W - BALL_R) ball.vx *= -0.4;
+          checkRoundEnd();
+        }
+
+        function updatePins(dt) {
+          for (const pin of pins) {
+            if (!pin.inMotion) continue;
+            pin.x += pin.vx * dt;
+            pin.y += pin.vy * dt;
+            pin.vx *= PIN_FRICTION;
+            pin.vy *= PIN_FRICTION;
+            if (isOffLane(pin)) pin.fallen = true;
+          }
+        }
+
+        function applyImpulseBallPin(ball, pin, nx, ny, approachSpeed) {
+          const denom = 1 / BALL_MASS + 1 / PIN_MASS;
+          const j = (1 + RESTITUTION) * approachSpeed / denom;
+          pin.vx += (nx * j) / PIN_MASS;
+          pin.vy += (ny * j) / PIN_MASS;
+          ball.vx -= (nx * j) / BALL_MASS;
+          ball.vy -= (ny * j) / BALL_MASS;
+          pin.inMotion = true;
+          pin.fallen = true;
+        }
+
+        function applyImpulsePinPin(p1, p2, nx, ny, approachSpeed) {
+          const denom = 1 / PIN_MASS + 1 / PIN_MASS;
+          const j = (1 + RESTITUTION) * approachSpeed / denom;
+          p1.vx -= (nx * j) / PIN_MASS;
+          p1.vy -= (ny * j) / PIN_MASS;
+          p2.vx += (nx * j) / PIN_MASS;
+          p2.vy += (ny * j) / PIN_MASS;
+          p1.inMotion = true;
+          p2.inMotion = true;
+          p1.fallen = true;
+          p2.fallen = true;
+        }
+
+        function resolveBallPin(ball, pin) {
+          if (isOffLane(pin)) return;
+          const hit = collideCircleCircle(ball.x, ball.y, BALL_R, pin.x, pin.y, PIN_HIT_R);
+          if (!hit) return;
+          const { nx, ny, overlap } = hit;
+          ball.x -= nx * overlap * 0.5;
+          ball.y -= ny * overlap * 0.5;
+          pin.x += nx * overlap * 0.5;
+          pin.y += ny * overlap * 0.5;
+          const relVx = ball.vx - pin.vx;
+          const relVy = ball.vy - pin.vy;
+          const approach = relVx * nx + relVy * ny;
+          if (approach <= 0) return;
+          applyImpulseBallPin(ball, pin, nx, ny, approach);
+        }
+
+        function resolvePinPin(p1, p2) {
+          if (isOffLane(p1) && isOffLane(p2)) return;
+          const hit = collideCircleCircle(p1.x, p1.y, PIN_HIT_R, p2.x, p2.y, PIN_HIT_R);
+          if (!hit) return;
+          const { nx, ny, overlap } = hit;
+          p1.x -= nx * overlap * 0.5;
+          p1.y -= ny * overlap * 0.5;
+          p2.x += nx * overlap * 0.5;
+          p2.y += ny * overlap * 0.5;
+          const relVx = p1.vx - p2.vx;
+          const relVy = p1.vy - p2.vy;
+          const approach = relVx * nx + relVy * ny;
+          if (approach <= 0) return;
+          applyImpulsePinPin(p1, p2, nx, ny, approach);
+        }
+
+        function update(dt) {
+          updateBall(dt);
+          updatePins(dt);
+          for (const pin of pins) resolveBallPin(ball, pin);
+          for (let i = 0; i < pins.length; i++) {
+            for (let j = i + 1; j < pins.length; j++) resolvePinPin(pins[i], pins[j]);
+          }
+        }
+
+        function drawLane() {
+          ctx.save();
+          ctx.translate(offsetX, offsetY);
+          ctx.scale(scale, scale);
+          const laneLeft = GUTTER_W;
+          const laneRight = LANE_W - GUTTER_W;
+          const g = ctx.createLinearGradient(0, 0, 0, LANE_L);
+          g.addColorStop(0, '#3d2817');
+          g.addColorStop(0.15, '#5c3d2e');
+          g.addColorStop(0.5, '#6b4423');
+          g.addColorStop(0.85, '#5c3d2e');
+          g.addColorStop(1, '#3d2817');
+          ctx.fillStyle = '#2a1810';
+          ctx.fillRect(0, 0, LANE_W, LANE_L);
+          ctx.fillStyle = g;
+          ctx.fillRect(laneLeft, 0, laneRight - laneLeft, LANE_L);
+          ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(laneLeft, 0, laneRight - laneLeft, LANE_L);
+          ctx.fillStyle = '#1a0f08';
+          ctx.fillRect(0, 0, GUTTER_W, LANE_L);
+          ctx.fillRect(LANE_W - GUTTER_W, 0, GUTTER_W, LANE_L);
+          ctx.fillStyle = '#8b4513';
+          ctx.fillRect(laneLeft, FOUL_LINE - 4, laneRight - laneLeft, 6);
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(laneLeft, FOUL_LINE - 4, laneRight - laneLeft, 6);
+          ctx.restore();
+        }
+
+        function drawPinShapeAt(x, y) {
+          const h = PIN_H;
+          const headR = PIN_HEAD_R;
+          const baseW = PIN_BASE_W;
+          ctx.beginPath();
+          ctx.moveTo(x, y - h / 2 + headR);
+          ctx.arc(x, y - h / 2, headR, Math.PI * 0.5, Math.PI * 1.5);
+          ctx.lineTo(x + baseW / 2, y + h / 2);
+          ctx.lineTo(x, y + h / 2 - 4);
+          ctx.lineTo(x - baseW / 2, y + h / 2);
+          ctx.closePath();
+        }
+
+        function drawPin(pin) {
+          if (isOffLane(pin)) return;
+          ctx.save();
+          ctx.translate(offsetX + pin.x * scale, offsetY + pin.y * scale);
+          ctx.scale(scale, scale);
+          if (pin.inMotion) {
+            const angle = Math.atan2(pin.vy, pin.vx);
+            ctx.rotate(angle);
+          }
+          const g = ctx.createLinearGradient(-8, -16, 8, 16);
+          g.addColorStop(0, '#fff8e7');
+          g.addColorStop(0.5, '#f5e6c8');
+          g.addColorStop(1, '#c9a227');
+          ctx.fillStyle = g;
+          drawPinShapeAt(0, 0);
+          ctx.fill();
+          ctx.strokeStyle = '#8b6914';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        function drawBall() {
+          const s = laneToScreen(ball.x, ball.y);
+          ctx.save();
+          const g = ctx.createRadialGradient(
+            s.x - 3, s.y - 3, 0, s.x, s.y, BALL_R * scale * 1.2
+          );
+          g.addColorStop(0, '#fff');
+          g.addColorStop(0.4, '#c41e3a');
+          g.addColorStop(1, '#6b0f1a');
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, BALL_R * scale, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#4a0a12';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        function drawPowerLine() {
+        }
+
+        function drawGameOver() {
+          ctx.fillStyle = 'rgba(0,0,0,0.75)';
+          ctx.fillRect(0, 0, cw, ch);
+          ctx.fillStyle = '#ffd700';
+          ctx.font = 'bold 28px Georgia';
+          ctx.textAlign = 'center';
+          ctx.fillText('Game Over!', cw / 2, ch / 2 - 30);
+          ctx.font = '22px Georgia';
+          ctx.fillStyle = '#fff';
+          ctx.fillText('Total score: ' + totalScore + ' / ' + (ROUNDS * 10), cw / 2, ch / 2 + 10);
+          ctx.fillStyle = '#ffb6c1';
+          ctx.font = '18px Georgia';
+          ctx.fillText('Tap or click to play again', cw / 2, ch / 2 + 50);
+        }
+
+        function draw() {
+          ctx.fillStyle = '#0f3460';
+          ctx.fillRect(0, 0, cw, ch);
+          drawLane();
+          pins.forEach(drawPin);
+          drawBall();
+          drawPowerLine();
+          if (gameOver) drawGameOver();
+        }
+
+        function loop(t) {
+          const dt = Math.min(1, (t - (loop.last || t)) / 16);
+          loop.last = t;
+          if (!gameOver) update(dt);
+          draw();
+          animId = requestAnimationFrame(loop);
+        }
+
+        function getEventPosInLane(e) {
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = canvas.width / rect.width;
+          const scaleY = canvas.height / rect.height;
+          let sx, sy;
+          const touch = (e.touches && e.touches.length) ? e.touches[0] : (e.changedTouches && e.changedTouches.length) ? e.changedTouches[0] : null;
+          if (touch) {
+            sx = (touch.clientX - rect.left) * scaleX;
+            sy = (touch.clientY - rect.top) * scaleY;
+          } else {
+            sx = (e.clientX - rect.left) * scaleX;
+            sy = (e.clientY - rect.top) * scaleY;
+          }
+          return screenToLane(sx, sy);
+        }
+
+        function hitTestPin(lx, ly) {
+          for (const pin of pins) {
+            if (isPinDown(pin)) continue;
+            const dx = lx - pin.x;
+            const dy = ly - pin.y;
+            if (dx * dx + dy * dy <= PIN_HIT_R * PIN_HIT_R) return pin;
+          }
+          return null;
+        }
+
+        function onPointerDown(e) {
+          e.preventDefault();
+          if (gameOver) {
+            gameOver = false;
+            currentRound = 1;
+            totalScore = 0;
+            startRound();
+            return;
+          }
+          if (ball.active) return;
+          const pos = getEventPosInLane(e);
+          const dx = pos.x - ball.x;
+          const dy = pos.y - ball.y;
+          const onBall = Math.sqrt(dx * dx + dy * dy) <= (BALL_R + PIN_HIT_R);
+          if (!onBall) {
+            const pin = hitTestPin(pos.x, pos.y);
+            if (pin) {
+              pin.inMotion = true;
+              pin.fallen = true;
+              pin.vx = (Math.random() - 0.5) * 14;
+              pin.vy = 10 + Math.random() * 8;
+              return;
+            }
+            return;
+          }
+          dragStart = true;
+          dragHistory = [{ x: pos.x, y: pos.y, t: performance.now() }];
+          ball.x = Math.max(BALL_DRAG_X_MIN, Math.min(BALL_DRAG_X_MAX, pos.x));
+          ball.y = Math.max(BALL_DRAG_Y_MIN, Math.min(BALL_DRAG_Y_MAX, pos.y));
+        }
+
+        function onPointerMove(e) {
+          e.preventDefault();
+          if (!dragStart || ball.active) return;
+          const pos = getEventPosInLane(e);
+          ball.x = Math.max(BALL_DRAG_X_MIN, Math.min(BALL_DRAG_X_MAX, pos.x));
+          ball.y = Math.max(BALL_DRAG_Y_MIN, Math.min(BALL_DRAG_Y_MAX, pos.y));
+          const t = performance.now();
+          dragHistory.push({ x: ball.x, y: ball.y, t });
+          if (dragHistory.length > DRAG_HISTORY_MAX) dragHistory.shift();
+        }
+
+        function onPointerUp(e) {
+          e.preventDefault();
+          if (gameOver) return;
+          if (!dragStart || ball.active) {
+            dragStart = null;
+            dragHistory = [];
+            return;
+          }
+          const tNow = performance.now();
+          dragHistory.push({ x: ball.x, y: ball.y, t: tNow });
+          let vx = 0, vy = 0;
+          if (dragHistory.length >= 2) {
+            const last = dragHistory[dragHistory.length - 1];
+            const span = Math.min(RELEASE_SPAN_POINTS, dragHistory.length - 1);
+            const from = dragHistory[dragHistory.length - 1 - span];
+            const dx = last.x - from.x;
+            const dy = last.y - from.y;
+            const dtSec = (last.t - from.t) / 1000;
+            if (dtSec > 0.001) {
+              vx = dx / dtSec;
+              vy = dy / dtSec;
+              const speed = Math.sqrt(vx * vx + vy * vy);
+              const scaled = Math.min(speed * THROW_VELOCITY_SCALE, MAX_THROW_SPEED);
+              if (speed > 0.01) {
+                vx = (vx / speed) * scaled;
+                vy = (vy / speed) * scaled;
+              }
+            }
+          }
+          if (vy > 0) vy = 0;
+          if (Math.abs(vx) < 0.3 && Math.abs(vy) < 0.3) {
+            dragStart = null;
+            dragHistory = [];
+            return;
+          }
+          ball.vx = vx;
+          ball.vy = vy;
+          ball.active = true;
+          dragStart = null;
+          dragHistory = [];
+        }
+
+        canvas.addEventListener('mousedown', onPointerDown);
+        canvas.addEventListener('mousemove', onPointerMove);
+        canvas.addEventListener('mouseup', onPointerUp);
+        canvas.addEventListener('mouseleave', () => { dragStart = null; dragHistory = []; });
+        canvas.addEventListener('touchstart', onPointerDown, { passive: false });
+        canvas.addEventListener('touchmove', onPointerMove, { passive: false });
+        canvas.addEventListener('touchend', onPointerUp, { passive: false });
+        canvas.addEventListener('touchcancel', () => { dragStart = null; dragHistory = []; });
+
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        startRound();
+        animId = requestAnimationFrame(loop);
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>★ Ice Rink Flappy • Happy Birthday! ★</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      html, body {
+        overflow: hidden;
+        width: 100%;
+        height: 100%;
+        height: 100dvh;
+      }
+
+      body {
+        font-family: Georgia, "Times New Roman", serif;
+        background: #0f3460;
+      }
+
+      .game-wrap {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh;
+      }
+
+      #gameCanvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+      }
+
+      .back-link {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        z-index: 10;
+        color: #fff;
+        background: rgba(0,0,0,0.4);
+        padding: 8px 14px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 0.95rem;
+      }
+
+      .back-link:hover {
+        background: rgba(0,0,0,0.6);
+      }
+    </style>
+  </head>
+  <body>
+    <a class="back-link" href="timepass.html">← Back</a>
+    <div class="game-wrap">
+      <canvas id="gameCanvas" width="360" height="560" tabindex="0"></canvas>
+    </div>
+
+    <script>
+      (function () {
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gameWrap = document.querySelector('.game-wrap');
+        const CW = 640;
+        const CH = 360;
+
+        function resizeCanvas() {
+          const w = gameWrap.clientWidth;
+          const h = gameWrap.clientHeight;
+          if (canvas.width !== w || canvas.height !== h) {
+            canvas.width = w;
+            canvas.height = h;
+          }
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        let playerImg = null;
+        const PLAYER_W = 40;
+        const PLAYER_H = 72;
+        const PLAYER_X = 100;
+        let playerY = CH / 2 - PLAYER_H / 2;
+        let playerVy = 0;
+        const GRAVITY = 0.12;
+        const FLAP = -5.2;
+
+        let walls = [];
+        let iceBlocks = [];
+        let coins = [];
+        let score = 0;
+        let highScore = parseInt(localStorage.getItem('iceRinkFlappyHigh') || '0', 10);
+        let gameStarted = false;
+        let gameOver = false;
+        let lastWall = 0;
+        let lastBlock = 0;
+        let lastCoin = 0;
+        let animId = null;
+
+        const WALL_W = 48;
+        const WALL_GAP = 200;
+        const WALL_SPEED = 2.4;
+        const WALL_SPAWN_INTERVAL = 2800;
+        const BLOCK_SPAWN_INTERVAL = 4200;
+        const COIN_SPAWN_INTERVAL = 1800;
+        const COIN_R = 14;
+
+        function loadImage() {
+          return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = 'assets/image copy 5.png';
+          });
+        }
+
+        function drawIceRinkBg() {
+          const g = ctx.createLinearGradient(0, 0, 0, CH);
+          g.addColorStop(0, '#b8e0ed');
+          g.addColorStop(0.5, '#d4eef5');
+          g.addColorStop(1, '#e0f4fa');
+          ctx.fillStyle = g;
+          ctx.fillRect(0, 0, CW, CH);
+          ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+          ctx.lineWidth = 1;
+          for (let i = 0; i < 8; i++) {
+            ctx.beginPath();
+            ctx.ellipse(CW / 2, CH / 2, 140 + i * 35, 70 + i * 18, 0, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+        }
+
+        function drawPlayer() {
+          if (playerImg && playerImg.complete) {
+            ctx.save();
+            ctx.translate(PLAYER_X + PLAYER_W / 2, playerY + PLAYER_H / 2);
+            const tilt = Math.max(-0.4, Math.min(0.4, playerVy * 0.03));
+            ctx.rotate(tilt);
+            ctx.scale(-1, 1);
+            ctx.drawImage(playerImg, -PLAYER_W / 2, -PLAYER_H / 2, PLAYER_W, PLAYER_H);
+            ctx.restore();
+          } else {
+            ctx.fillStyle = '#ff69b4';
+            ctx.beginPath();
+            ctx.ellipse(PLAYER_X + PLAYER_W / 2, playerY + PLAYER_H / 2, PLAYER_W / 2, PLAYER_H / 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        function spawnWall() {
+          const gapY = 50 + Math.random() * (CH - 100 - WALL_GAP);
+          walls.push({
+            x: CW,
+            topH: gapY,
+            gap: WALL_GAP,
+            bottomY: gapY + WALL_GAP,
+            bottomH: CH - (gapY + WALL_GAP),
+            w: WALL_W,
+          });
+        }
+
+        function spawnIceBlock() {
+          const w = 36 + Math.random() * 30;
+          const h = 28 + Math.random() * 40;
+          const y = 40 + Math.random() * (CH - 80 - h);
+          iceBlocks.push({ x: CW, y, w, h });
+        }
+
+        function spawnCoin() {
+          const y = 50 + Math.random() * (CH - 100);
+          coins.push({ x: CW + 20, y, r: COIN_R, collected: false });
+        }
+
+        function flap() {
+          if (!gameStarted && !gameOver) {
+            gameStarted = true;
+            playerVy = FLAP;
+            return;
+          }
+          if (gameOver) {
+            reset();
+            return;
+          }
+          if (gameStarted) playerVy = FLAP;
+        }
+
+        function reset() {
+          playerY = CH / 2 - PLAYER_H / 2;
+          playerVy = 0;
+          walls = [];
+          iceBlocks = [];
+          coins = [];
+          score = 0;
+          gameStarted = false;
+          gameOver = false;
+          lastWall = lastBlock = lastCoin = performance.now();
+        }
+
+        function hitTestPlayer(x, y, w, h) {
+          const px = PLAYER_X + PLAYER_W * 0.2;
+          const pw = PLAYER_W * 0.6;
+          const py = playerY + PLAYER_H * 0.2;
+          const ph = PLAYER_H * 0.6;
+          return px + pw > x && px < x + w && py + ph > y && py < y + h;
+        }
+
+        function hitTestCoin(c) {
+          const cx = PLAYER_X + PLAYER_W / 2;
+          const cy = playerY + PLAYER_H / 2;
+          const dist = Math.hypot(c.x + c.r - cx, c.y + c.r - cy);
+          return dist < PLAYER_W / 2 + c.r;
+        }
+
+        function update(now) {
+          if (gameOver) return;
+
+          if (gameStarted) {
+            playerVy += GRAVITY;
+            playerY += playerVy;
+            if (playerY < 0) { playerY = 0; playerVy = 0; }
+            if (playerY + PLAYER_H > CH) {
+              playerY = CH - PLAYER_H;
+              gameOver = true;
+            }
+          }
+
+          if (gameStarted && now - lastWall > WALL_SPAWN_INTERVAL) {
+            spawnWall();
+            lastWall = now;
+          }
+          if (gameStarted && now - lastBlock > BLOCK_SPAWN_INTERVAL) {
+            spawnIceBlock();
+            lastBlock = now;
+          }
+          if (gameStarted && now - lastCoin > COIN_SPAWN_INTERVAL) {
+            spawnCoin();
+            lastCoin = now;
+          }
+
+          walls.forEach((w) => { w.x -= WALL_SPEED; });
+          walls = walls.filter((w) => w.x + w.w > 0);
+
+          iceBlocks.forEach((b) => { b.x -= WALL_SPEED * 0.9; });
+          iceBlocks = iceBlocks.filter((b) => b.x + b.w > 0);
+
+          coins.forEach((c) => {
+            if (c.collected) return;
+            c.x -= WALL_SPEED * 0.85;
+            if (hitTestCoin(c)) {
+              c.collected = true;
+              score += 10;
+            }
+          });
+          coins = coins.filter((c) => !c.collected && c.x + c.r * 2 > 0);
+
+          walls.forEach((w) => {
+            if (hitTestPlayer(w.x, 0, w.w, w.topH) || hitTestPlayer(w.x, w.bottomY, w.w, w.bottomH)) {
+              gameOver = true;
+            }
+          });
+          iceBlocks.forEach((b) => {
+            if (hitTestPlayer(b.x, b.y, b.w, b.h)) gameOver = true;
+          });
+
+          if (score > highScore) {
+            highScore = score;
+            localStorage.setItem('iceRinkFlappyHigh', String(highScore));
+          }
+        }
+
+        function draw() {
+          const scale = Math.min(canvas.width / CW, canvas.height / CH);
+          const dx = (canvas.width - CW * scale) / 2;
+          const dy = (canvas.height - CH * scale) / 2;
+          ctx.save();
+          ctx.translate(dx, dy);
+          ctx.scale(scale, scale);
+          drawIceRinkBg();
+
+          walls.forEach((w) => {
+            ctx.fillStyle = 'rgba(255,255,255,0.85)';
+            ctx.strokeStyle = '#7eb8d4';
+            ctx.lineWidth = 2;
+            ctx.fillRect(w.x, 0, w.w, w.topH);
+            ctx.strokeRect(w.x, 0, w.w, w.topH);
+            ctx.fillRect(w.x, w.bottomY, w.w, w.bottomH);
+            ctx.strokeRect(w.x, w.bottomY, w.w, w.bottomH);
+          });
+
+          iceBlocks.forEach((b) => {
+            ctx.fillStyle = 'rgba(200,230,255,0.9)';
+            ctx.strokeStyle = '#5a9bb8';
+            ctx.lineWidth = 2;
+            ctx.fillRect(b.x, b.y, b.w, b.h);
+            ctx.strokeRect(b.x, b.y, b.w, b.h);
+          });
+
+          coins.forEach((c) => {
+            if (c.collected) return;
+            ctx.fillStyle = '#ffd700';
+            ctx.strokeStyle = '#b8860b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(c.x + c.r, c.y + c.r, c.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+          });
+
+          drawPlayer();
+
+          ctx.fillStyle = '#333';
+          ctx.font = 'bold 20px Georgia, serif';
+          ctx.fillText('Score: ' + score, 12, 28);
+          ctx.fillText('Best: ' + highScore, CW - 100, 28);
+
+          if (!gameStarted && !gameOver) {
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(0, 0, CW, CH);
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 22px Georgia, serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Tap or Space to start', CW / 2, CH / 2 - 20);
+            ctx.font = '16px Georgia, serif';
+            ctx.fillText('⛸️ Glide through the rink!', CW / 2, CH / 2 + 10);
+            ctx.textAlign = 'left';
+          }
+
+          if (gameOver) {
+            ctx.fillStyle = 'rgba(0,0,0,0.55)';
+            ctx.fillRect(0, 0, CW, CH);
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 24px Georgia, serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Game Over', CW / 2, CH / 2 - 40);
+            ctx.font = '18px Georgia, serif';
+            ctx.fillText('Score: ' + score, CW / 2, CH / 2);
+            ctx.fillText('Tap or Space to play again', CW / 2, CH / 2 + 45);
+            ctx.textAlign = 'left';
+          }
+          ctx.restore();
+        }
+
+        function gameLoop(now) {
+          update(now);
+          draw();
+          animId = requestAnimationFrame(gameLoop);
+        }
+
+        canvas.addEventListener('click', flap);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); flap(); }, { passive: false });
+        document.addEventListener('keydown', (e) => {
+          if (e.code === 'Space') { e.preventDefault(); flap(); }
+        });
+        canvas.focus();
+
+        loadImage().then((img) => { playerImg = img; }).catch(() => {});
+
+        draw();
+        animId = requestAnimationFrame(gameLoop);
+      })();
+    </script>
+  </body>
+</html>
